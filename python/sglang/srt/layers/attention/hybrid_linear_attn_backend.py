@@ -2175,11 +2175,17 @@ class HybridLinearAttnBackend(AttentionBackend):
                 fallback = None
                 fallback_source = None
                 for idx, layer_module in enumerate(inner.layers):
-                    for attr in ("self_attn", "attention"):
-                        attn_holder = getattr(layer_module, attr, None)
+                    # None = the layer itself
+                    for attr in ("self_attn", "attention", None):
+                        attn_holder = (
+                            layer_module
+                            if attr is None
+                            else getattr(layer_module, attr, None)
+                        )
                         if attn_holder is None or not hasattr(attn_holder, "rotary_emb"):
                             continue
-                        source = f"model.model.layers.{idx}.{attr}.rotary_emb"
+                        prefix = f"{attr}." if attr else ""
+                        source = f"model.model.layers.{idx}.{prefix}rotary_emb"
                         if fallback is None:
                             fallback = attn_holder.rotary_emb
                             fallback_source = source
